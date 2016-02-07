@@ -80,7 +80,7 @@ void loop()
   if(millis()-sent>500)
     {sent=millis();
      String tool = "Test" + String(i, DEC);
-     sendCommand(tool);
+     //sendCommand(tool);
      i++;
     }
     
@@ -115,6 +115,8 @@ part1 = com.substring(0, com.indexOf("|"));
 }
 
 
+
+
 void sendCommand(String sendCom)
 {
   String sendThis = sendCom + "| \n" ;
@@ -125,11 +127,9 @@ void sendCommand(String sendCom)
 
 
 
-
-
 // WebSOcket Events
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
-
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length)
+{
   switch (type) {
     case WStype_DISCONNECTED:
       break;
@@ -160,12 +160,15 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
           webSocket.broadcastTXT(text);
         }
 
-        if (text.startsWith("z")) {
+        else if (text.startsWith("z")) {
           String zVal = (text.substring(text.indexOf("z") + 1, text.length()));
           int zInt = zVal.toInt();
           analogWrite(BLUEPIN, zInt);
         }
-     
+      else
+      {
+        sendCommand(text);
+      }
 
         
 
@@ -211,7 +214,6 @@ void HTTPUpdateConnect() {
   Serial.println(WiFi.localIP());
 
 }
-
 
 
 
