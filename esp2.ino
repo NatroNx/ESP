@@ -6,7 +6,10 @@
 #include <WebSocketsServer.h>
 #include <Hash.h>
 
-#define BLUEPIN 13
+
+
+
+#define BLUEPIN 12
 
 #define SSID_ME "Wlan07"
 #define PW_ME "wlan_01!_2005!grojer_.."
@@ -39,7 +42,7 @@ int zOld;
 
 String StringFromSerial;
 unsigned long sent = millis();
-int i =0;
+int i = 0;
 int callme=0;
 
 
@@ -72,14 +75,11 @@ void loop()
 
   }
   
-  
-  
-  
-  
-  
-  if(millis()-sent>500)
+  if(millis()-sent>100)
     {sent=millis();
      String tool = "Test" + String(i, DEC);
+     //analogWrite(BLUEPIN, 255);
+     //Serial.println(i);
      //sendCommand(tool);
      i++;
     }
@@ -88,19 +88,14 @@ void loop()
     {
         char charFromSerial = Serial.read();
         if (charFromSerial == '\n')
-          {          parseCommand(StringFromSerial);
+          { parseCommand(StringFromSerial);
             StringFromSerial="";
           }
           else
           {
             StringFromSerial += charFromSerial;
           }
-        
-    
-    }
-
-    
-    
+      }   
 }
 
 void parseCommand(String com)
@@ -108,9 +103,9 @@ void parseCommand(String com)
 part1 = com.substring(0, com.indexOf("|"));
   if(part1.equalsIgnoreCase("ack"))
   {i=0;
-   sendCommand("GiveMillis");
-   sendCommand("How long will  ESP8266 to an Arno Mega via Serial line?");
-   sendCommand("GiveMillis");
+   //sendCommand("GiveMillis");
+  // sendCommand("How long will  ESP8266 to an Arno Mega via Serial line?");
+   //sendCommand("GiveMillis");
   }  
 }
 
@@ -163,11 +158,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         else if (text.startsWith("z")) {
           String zVal = (text.substring(text.indexOf("z") + 1, text.length()));
           int zInt = zVal.toInt();
+          Serial.println(zInt);
           analogWrite(BLUEPIN, zInt);
         }
       else
       {
-        sendCommand(text);
+        //sendCommand(text);
       }
 
         
