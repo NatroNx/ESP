@@ -111,7 +111,7 @@ void parseCommand(String com)
 { 
 String part1;
  // part1 = com.substring(0, com.indexOf("|"));
-  if(com.substring(0, com.indexOf("|")).equalsIgnoreCase("DataForYou"))
+  if(com.substring(0, com.indexOf("|")).equalsIgnoreCase("Put"))
     {
     for(int i=com.indexOf("|"); i<com.lastIndexOf("|"); i=com.indexOf("|",i+1))
      {String part1 = com.substring(i+1, com.indexOf("|",i+1));
@@ -166,7 +166,7 @@ String part1;
        
     }
     }
-  else  if(com.substring(0, com.indexOf("|")).equalsIgnoreCase("DataForMe"))
+  else  if(com.substring(0, com.indexOf("|")).equalsIgnoreCase("Get"))
     {
     for(int i=com.indexOf("|"); i<com.lastIndexOf("|"); i=com.indexOf("|",i+1))
      {String part1 = com.substring(i+1, com.indexOf("|",i+1));
@@ -265,7 +265,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
           Serial.println(zInt);
           analogWrite(BLUEPIN, zInt);
         }
-          else if (text.startsWith("y")) {
+          else if (text.startsWith("r")) {
           String zVal = (text.substring(text.indexOf("y") + 1, text.length()));
           //analogWrite(BLUEPIN, zInt);
           webSocket.broadcastTXT(testString);
