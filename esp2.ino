@@ -20,7 +20,7 @@ IPAddress gateway(10,0,0,138);
 IPAddress subnet(255,255,255,0);
 
 
-WebSocketsServer webSocket = WebSocketsServer(81);
+WebSocketsServer webSocket = WebSocketsServer(9000);
 ESP8266WebServer httpServer(80);
 ESP8266HTTPUpdateServer httpUpdater;
 const char* host = HOST_ME;
@@ -154,7 +154,7 @@ String part1;
        //____________________________________________________________________________________________________use this to parsDateTime in Seconds unixtimne!
       if(part1.substring(0, part1.indexOf("_")).equalsIgnoreCase("testDateTime"))
       {
-        char arr[12];
+        char arr[20];
         (part1.substring(part1.indexOf("_")+1,part1.length())).toCharArray(arr, sizeof(arr));
        testDateTime=atol(arr);
         
@@ -218,8 +218,8 @@ String part1;
 void sendCommand(String sendCom)
 {
   String sendThis = sendCom + "| \n" ;
-   char charBuf[100];
-   sendThis.toCharArray(charBuf, 100);
+   char charBuf[150];
+   sendThis.toCharArray(charBuf, 150);
    Serial.println(charBuf);
 }
 
@@ -265,28 +265,29 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
           Serial.println(zInt);
           analogWrite(BLUEPIN, zInt);
         }
-          else if (text.startsWith("r")) {
-          String zVal = (text.substring(text.indexOf("y") + 1, text.length()));
-          //analogWrite(BLUEPIN, zInt);
-          webSocket.broadcastTXT(testString);
-          webSocket.broadcastTXT(String(testInt));
-          webSocket.broadcastTXT(String(testFloat));
-          webSocket.broadcastTXT(String(testByte));
-          webSocket.broadcastTXT(String(testBoolean));
-
-        webSocket.broadcastTXT(String(testDateTime.hour(), DEC));
-        webSocket.broadcastTXT(String(':'));
-        webSocket.broadcastTXT(String(testDateTime.minute(), DEC));
-        webSocket.broadcastTXT(String(':'));
-        webSocket.broadcastTXT(String(testDateTime.second(), DEC));
-        webSocket.broadcastTXT(String(' '));
-        webSocket.broadcastTXT(String(testDateTime.day(), DEC));
-        webSocket.broadcastTXT(String('.'));
-        webSocket.broadcastTXT(String(testDateTime.month(), DEC));
-        webSocket.broadcastTXT(String('.'));
-        webSocket.broadcastTXT(String(testDateTime.year(), DEC));
-          
-        }
+      else if (text.substring(0, text.indexOf("|")).equalsIgnoreCase("viewAllData"))
+      {
+      webSocket.broadcastTXT(testString);
+      webSocket.broadcastTXT(String(testInt));
+      webSocket.broadcastTXT(String(testFloat));
+      webSocket.broadcastTXT(String(testByte));
+      webSocket.broadcastTXT(String(testBoolean));
+      webSocket.broadcastTXT(String(testDateTime.hour(), DEC));
+      webSocket.broadcastTXT(String(':'));
+      webSocket.broadcastTXT(String(testDateTime.minute(), DEC));
+      webSocket.broadcastTXT(String(':'));
+      webSocket.broadcastTXT(String(testDateTime.second(), DEC));
+      webSocket.broadcastTXT(String(' '));
+      webSocket.broadcastTXT(String(testDateTime.day(), DEC));
+      webSocket.broadcastTXT(String('.'));
+      webSocket.broadcastTXT(String(testDateTime.month(), DEC));
+      webSocket.broadcastTXT(String('.'));
+      webSocket.broadcastTXT(String(testDateTime.year(), DEC));      
+      }
+      else if (text.substring(0, text.indexOf("|")).equalsIgnoreCase("GetData"))
+      {
+      getAllData();
+      }
       else
       {
         sendCommand(text);
@@ -326,6 +327,12 @@ void WebSocketConnect() {
   webSocket.onEvent(webSocketEvent);
 }
 
+
+void getAllData()
+{
+  sendCommand("get|teststring|testint|testfloat|testbyte|testboolean|testDateTime");
+              
+}
 
 
 // HTTP updater connection
