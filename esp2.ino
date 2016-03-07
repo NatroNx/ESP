@@ -1,3 +1,8 @@
+//v.1.0.0 - 08.03.2016 -   init 
+
+
+
+
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
@@ -8,7 +13,7 @@
 #include "RTClib.h"
 #include <Wire.h>
 #include <WiFiUdp.h>
-
+#include <pgmspace.h>
 
 
 #define BLUEPIN 13
@@ -27,6 +32,61 @@ byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing pack
 // A UDP instance to let us send and receive packets over UDP
 WiFiUDP udp;
 
+#define debug 0
+
+
+
+
+const byte numChars = 230;
+char receivedChars[numChars];
+static byte ndx = 0;
+boolean newData = false;
+
+boolean webSockUpdate = false;
+unsigned long webSockWait = 0;
+
+
+
+
+
+
+enum {tPhWert, tTemp, tcalculatedPWM, tcalculatedRed, tcalculatedGreen, tcalculatedBlue, tTVModeState, tcleaningInProcess,
+      tmanualOverride, tMoonModeState, tpump1Value, tpump2Value, tlight230Value, tlight1Value,
+      tlight2Value, tco2Value, theaterValue, tdPump1Value, tdPump2Value, tdPump3Value, tcoolValue, tnow, tprocess
+     };
+
+const char PhWert_Char[] PROGMEM    = "pH";
+const char Temp_Char[] PROGMEM    = "tE";
+const char calculatedPWM_Char[] PROGMEM    = "cP";
+const char calculatedRed_Char[] PROGMEM    = "cR";
+const char calculatedGreen_Char[] PROGMEM    = "cG";
+const char calculatedBlue_Char[] PROGMEM    = "cB";
+const char TVModeState_Char[] PROGMEM    = "tV";
+const char cleaningInProcess_Char[] PROGMEM    = "cI";
+const char manualOverride_Char[] PROGMEM    = "mO";
+const char MoonModeState_Char[] PROGMEM    = "mM";
+const char pump1Value_Char[] PROGMEM    = "p1";
+const char pump2Value_Char[] PROGMEM    = "p2";
+const char light230Value_Char[] PROGMEM    = "lV";
+const char light1Value_Char[] PROGMEM    = "l1";
+const char light2Value_Char[] PROGMEM    = "l2";
+const char co2Value_Char[] PROGMEM    = "cO";
+const char heaterValue_Char[] PROGMEM    = "hV";
+const char dPump1Value_Char[] PROGMEM    = "d1";
+const char dPump2Value_Char[] PROGMEM    = "d2";
+const char dPump3Value_Char[] PROGMEM    = "d3";
+const char coolValue_Char[] PROGMEM    = "cV";
+const char now_Char[] PROGMEM    = "nO";
+const char process_Char[] PROGMEM    = "pR";
+
+PGM_P const Char_table[] PROGMEM  =
+{ PhWert_Char, Temp_Char, calculatedPWM_Char, calculatedRed_Char, calculatedGreen_Char, calculatedBlue_Char, TVModeState_Char,
+  cleaningInProcess_Char, manualOverride_Char, MoonModeState_Char, pump1Value_Char, pump2Value_Char,
+  light230Value_Char, light1Value_Char, light2Value_Char, co2Value_Char, heaterValue_Char,
+  dPump1Value_Char, dPump2Value_Char, dPump3Value_Char, coolValue_Char, now_Char, process_Char
+};
+
+int charCount = sizeof(Char_table) / sizeof(Char_table[0]);
 
 
 
@@ -53,20 +113,40 @@ int zInt;
 int zOld;
 
 
-/*     
- For more details see: http://projectsfromtech.blogspot.com/
- 
 
- Read char value from Serial Monitor
- Display that value on the Serial Monitor
- */
-String testString = "ESP";
-int testInt = 1;
-float testFloat = 2;
-byte testByte = 3;
-boolean testBoolean = false;
-DateTime testDateTime;
-DateTime ntpDateTime;
+
+
+// time to get live
+DateTime now;
+//modes
+boolean TVModeState = false;
+boolean cleaningInProcess = false;
+boolean manualOverride = false;
+boolean MoonModeState = false;
+//lights
+float calculatedPWM = 100;   
+float calculatedRed = 1;
+float calculatedGreen = 2;
+float calculatedBlue = 3;
+//Relais
+boolean pump1Value = false;
+boolean pump2Value = false;
+boolean light230Value = true;
+boolean light1Value = true;
+boolean light2Value = true;
+boolean co2Value = true;
+boolean heaterValue = false;
+boolean dPump1Value = true;
+boolean dPump2Value = true;
+boolean dPump3Value = true;
+boolean coolValue = true;
+//values to monitor
+float PhWert = 7.01; //sting to float to calculate with it
+float Temp = 11.11;  
+
+
+
+
 
 
 String StringFromSerial;
@@ -87,11 +167,76 @@ void setup()
   WebSocketConnect();
   HTTPUpdateConnect();
   udp.begin(localPort);     //ntp 
-  lastTimeNTPUpdate=millis();
+  lastTimeNTPUpdate=0;
 }
 
+
+  void recvWithStartEndMarkers() {
+
+ 
+  static boolean recvInProgress = false;
+    char startMarker = '<';
+    char endMarker = '>';
+    char rc;
+   
+ 
+ // if (Serial.available() > 0) {
+    while (Serial.available()) {
+        rc = Serial.read();
+
+        if (recvInProgress == true) {
+            if (rc != endMarker) {
+                receivedChars[ndx] = rc;
+                ndx++;
+                if (ndx >= numChars) {
+                    ndx = numChars - 1;
+                }
+            }
+            else {
+                
+                receivedChars[ndx] = '\0'; // terminate the string
+                recvInProgress = false;
+                ndx=0;
+                newData = true;
+            }
+        }
+
+        else if (rc == startMarker) {
+            recvInProgress = true;
+        }
+    }
+
+}
+
+
+
+
+
+
+
+
+
+  
+void useNewData() {
+
+    if (newData == true) {
+
+                StringFromSerial=receivedChars;
+             
+                parseCommand(StringFromSerial);
+                     StringFromSerial="";
+                ndx = 0;
+                newData = false;
+              }
+}
+
+
+
+
+
 void loop() 
-{  if (WiFi.status() != WL_CONNECTED)
+{  
+  if (WiFi.status() != WL_CONNECTED)
   {
     WifiConnect();
     WebSocketConnect();
@@ -107,7 +252,8 @@ void loop()
 
   }
 
-
+   recvWithStartEndMarkers();
+    useNewData();
 
 
 
@@ -121,25 +267,11 @@ void loop()
      i++;
     }
     
-    if(Serial.available())
-    {
-        char charFromSerial = Serial.read();
-        if (charFromSerial == '\n')
-          { parseCommand(StringFromSerial);
-            StringFromSerial="";
-          }
-          else
-          {
-            StringFromSerial += charFromSerial;
-          }
-      }   
+    
 
 
-      if (millis()-lastTimeNTPUpdate>60000 * 1 )   // alle 1 Minuten NTP Update
+ if (millis()-lastTimeNTPUpdate>60000 * 60 ||  lastTimeNTPUpdate==0 )   // alle 60 Minuten NTP Update
 {
- Serial.println(lastTimeNTPUpdate);
-  Serial.println(millis());
- 
   //get a random server from the pool
   WiFi.hostByName(ntpServerName, timeServerIP); 
   sendNTPpacket(timeServerIP); // send an NTP packet to a time server
@@ -150,12 +282,21 @@ void loop()
   
   int cb = udp.parsePacket();
   if (!cb) {
-    Serial.println("no packet yet");
+# if debug
+{
+       Serial.println("no packet yet");
+}
+#endif 
+   
   }
 
  else {
-    Serial.print("packet received, length=");
+# if debug
+{    Serial.print("packet received, length=");
     Serial.println(cb);
+ }
+#endif 
+ 
     // We've received a packet, read the data from it
     udp.read(packetBuffer, NTP_PACKET_SIZE); // read the packet into the buffer
 
@@ -169,8 +310,8 @@ void loop()
     unsigned long secsSince1900 = highWord << 16 | lowWord;
     Serial.print("Unixtime: " );
     Serial.println(secsSince1900-2208988800UL);
-    ntpDateTime=secsSince1900-2208988800UL+3600;  //creating unixtime +1 Hour (timezone)
-    sendCommand("put|ntpdatetime_" + String(ntpDateTime.unixtime()) + " \n");  //send the data to mega
+    now=secsSince1900-2208988800UL+3600;  //creating unixtime +1 Hour (timezone)
+    sendCommand("nO", String(now.unixtime()) + "|");  //send the data to mega
     lastTimeNTPUpdate=millis();
  }
 
@@ -178,127 +319,21 @@ void loop()
 
 
 
-}
 
-
-void parseCommand(String com)
-{ 
-String part1;
- // part1 = com.substring(0, com.indexOf("|"));
-  if(com.substring(0, com.indexOf("|")).equalsIgnoreCase("Put"))
-    {
-    for(int i=com.indexOf("|"); i<com.lastIndexOf("|"); i=com.indexOf("|",i+1))
-     {String part1 = com.substring(i+1, com.indexOf("|",i+1));
-      //____________________________________________________________________________________________________use this to parseStrings
-      if(part1.substring(0, part1.indexOf("_")).equalsIgnoreCase("teststring"))
-      {
-        testString=part1.substring(part1.indexOf("_")+1,part1.length());
-        
-      }
-      //____________________________________________________________________________________________________use this to parseInts
-      if(part1.substring(0, part1.indexOf("_")).equalsIgnoreCase("testInt"))
-      {
-        testInt=(part1.substring(part1.indexOf("_")+1,part1.length())).toInt();
-        
-      }      
-      //____________________________________________________________________________________________________use this to parseFloats
-      if(part1.substring(0, part1.indexOf("_")).equalsIgnoreCase("testFloat"))
-      {
-        testFloat=(part1.substring(part1.indexOf("_")+1,part1.length())).toFloat();
-        
-      }    
-       //____________________________________________________________________________________________________use this to parseByte
-      if(part1.substring(0, part1.indexOf("_")).equalsIgnoreCase("testByte"))
-      {
-        testByte=(part1.substring(part1.indexOf("_")+1,part1.length())).toInt();
-        
-      }  
-       //____________________________________________________________________________________________________use this to parseBoolean
-      if(part1.substring(0, part1.indexOf("_")).equalsIgnoreCase("testBoolean"))
-      {
-        testBoolean=(part1.substring(part1.indexOf("_")+1,part1.length())).toInt();
-        
-      }  
-       //____________________________________________________________________________________________________use this to parseByte
-      if(part1.substring(0, part1.indexOf("_")).equalsIgnoreCase("testBoolean"))
-      {
-        testBoolean=(part1.substring(part1.indexOf("_")+1,part1.length())).toInt();
-        
-      }  
-       //___________ DONT PARSE DATETIME - datetime comes from NTP Source____________________________________use this to parsDateTime in Seconds unixtimne!
-/*      if(part1.substring(0, part1.indexOf("_")).equalsIgnoreCase("testDateTime"))
-      {
-        char arr[20];
-        (part1.substring(part1.indexOf("_")+1,part1.length())).toCharArray(arr, sizeof(arr));
-       testDateTime=atol(arr);
-        
-      } 
-      */
-      else
-      {
-        sendCommand(String(com));
-      }
-       
-    }
-    }
-  else  if(com.substring(0, com.indexOf("|")).equalsIgnoreCase("Get"))
-    {
-    for(int i=com.indexOf("|"); i<com.lastIndexOf("|"); i=com.indexOf("|",i+1))
-     {String part1 = com.substring(i+1, com.indexOf("|",i+1));
-      //____________________________________________________________________________________________________use this to parseStrings
-      if(part1.substring(0, part1.indexOf("_")).equalsIgnoreCase("teststring"))
-      {
-        sendCommand(testString);
-      }
-      //____________________________________________________________________________________________________use this to parseInts
-      if(part1.substring(0, part1.indexOf("_")).equalsIgnoreCase("testInt"))
-      {
-        sendCommand(String(testInt));
-      }      
-      //____________________________________________________________________________________________________use this to parseFloats
-      if(part1.substring(0, part1.indexOf("_")).equalsIgnoreCase("testFloat"))
-      {
-        sendCommand(String(testFloat));
-      }    
-       //____________________________________________________________________________________________________use this to parseByte
-      if(part1.substring(0, part1.indexOf("_")).equalsIgnoreCase("testByte"))
-      {
-        sendCommand(String(testByte));
-      }  
-       //____________________________________________________________________________________________________use this to parseBoolean
-      if(part1.substring(0, part1.indexOf("_")).equalsIgnoreCase("testBoolean"))
-      {
-        sendCommand(String(testBoolean));
-      }  
-       //____________________________________________________________________________________________________use this to parsDateTime in Seconds unixtimne!
-      if(part1.substring(0, part1.indexOf("_")).equalsIgnoreCase("ntpDateTime"))
-      {       
-        sendCommand(String(ntpDateTime.unixtime()));
-        // sendCommand(String(testDateTime.unixtime()));
-      }  
-    } 
-    }
-
-  else
-   {
-    //Serial.println(com);
-   }
-  
-}
-
-
-
-
-
-
-
-void sendCommand(String sendCom)
+if (webSockUpdate)
 {
-  String sendThis = sendCom + "| \n" ;
-   char charBuf[150];
-   sendThis.toCharArray(charBuf, 150);
-   Serial.println(charBuf);
+  if (millis()-webSockWait>200)
+  {webSockWait=millis();
+   webSockUpdate=false;
+   webSocketUpdate();
+   
+  }
 }
+
+}
+
+
+
 
 
 
@@ -316,7 +351,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\r\n", num, ip[0], ip[1], ip[2], ip[3], payload);
         // Send the current LED status
  
-          webSocket.sendTXT(num, text);
       }
       
     
@@ -328,47 +362,56 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       {
         text = String((char *) &payload[0]);
 
-        if (text.startsWith("u")) {
-          String zVal = (text.substring(text.indexOf("u") + 1, text.length()));
-          int zInt = zVal.toInt();
-          analogWrite(BLUEPIN, zInt);
-          webSocket.broadcastTXT(text);
-          
-        }
-
-        else if (text.startsWith("z")) {
-          String zVal = (text.substring(text.indexOf("z") + 1, text.length()));
-          int zInt = zVal.toInt();
-          Serial.println(zInt);
-          analogWrite(BLUEPIN, zInt);
-        }
-      else if (text.substring(0, text.indexOf("|")).equalsIgnoreCase("viewAllData"))
+     if (text.substring(0, text.indexOf("|")).equalsIgnoreCase("viewAllData"))
       {
-      webSocket.broadcastTXT(testString);
+/*      webSocket.broadcastTXT(testString);
       webSocket.broadcastTXT(String(testInt));
       webSocket.broadcastTXT(String(testFloat));
       webSocket.broadcastTXT(String(testByte));
       webSocket.broadcastTXT(String(testBoolean));
-      webSocket.broadcastTXT(String(ntpDateTime.hour(), DEC));
-      webSocket.broadcastTXT(String(':'));
-      webSocket.broadcastTXT(String(ntpDateTime.minute(), DEC));
-      webSocket.broadcastTXT(String(':'));
-      webSocket.broadcastTXT(String(ntpDateTime.second(), DEC));
-      webSocket.broadcastTXT(String(' '));
-      webSocket.broadcastTXT(String(ntpDateTime.day(), DEC));
-      webSocket.broadcastTXT(String('.'));
-      webSocket.broadcastTXT(String(ntpDateTime.month(), DEC));
-      webSocket.broadcastTXT(String('.'));
-      webSocket.broadcastTXT(String(ntpDateTime.year(), DEC));      
+      */
+  # if debug
+      webSocket.broadcastTXT(String(now.hour(), DEC) +  String(':')  +    String(now.minute(), DEC) + String(':') + String(now.second(), DEC) + String(' ')  + String(now.day(), DEC)+   String('.') +   String(now.month(), DEC) +    String('.') + String(now.year(), DEC)  );
+      webSocket.broadcastTXT("PhWert: " + String(PhWert));
+      webSocket.broadcastTXT("Temp: " + String(Temp));
+      webSocket.broadcastTXT("TVModeState: " + String(TVModeState));
+      webSocket.broadcastTXT("cleaningInProcess: " + String(cleaningInProcess));
+      webSocket.broadcastTXT("manualOverride: " + String(manualOverride));
+      webSocket.broadcastTXT("MoonModeState: " + String(MoonModeState));
+      webSocket.broadcastTXT("calculatedPWM: " + String(calculatedPWM));
+      webSocket.broadcastTXT("calculatedRed: " + String(calculatedRed));
+      webSocket.broadcastTXT("calculatedGreen: " + String(calculatedGreen));
+      webSocket.broadcastTXT("calculatedBlue: " + String(calculatedBlue));
+      webSocket.broadcastTXT("pump1Value: " + String(pump1Value));
+      webSocket.broadcastTXT("pump2Value: " + String(pump2Value));
+      webSocket.broadcastTXT("light230Value: " + String(light230Value));
+      webSocket.broadcastTXT("light1Value: " + String(light1Value));
+      webSocket.broadcastTXT("light2Value: " + String(light2Value));
+      webSocket.broadcastTXT("co2Value: " + String(co2Value));
+      webSocket.broadcastTXT("heaterValue: " + String(heaterValue));
+      webSocket.broadcastTXT("dPump1Value: " + String(dPump1Value));
+      webSocket.broadcastTXT("dPump2Value: " + String(dPump2Value));
+      webSocket.broadcastTXT("dPump3Value: " + String(dPump3Value));
+      webSocket.broadcastTXT("coolValue: " + String(coolValue));
+      #endif
+      webSockWait=millis();
+      webSockUpdate=true;
+    
+
+
+      
       }
       else if (text.substring(0, text.indexOf("|")).equalsIgnoreCase("GetData"))
       {
       getAllData();
+      webSockWait=millis();
+      webSockUpdate=true;
+
       }
 
       else
       {
-        sendCommand(text);
+        sendSerial(text);
       }
 
         
@@ -408,7 +451,7 @@ void WebSocketConnect() {
 
 void getAllData()
 {
-  sendCommand("get|teststring|testint|testfloat|testbyte|testboolean|ntpDateTime");
+  sendSerial("updateMe");
               
 }
 
@@ -428,8 +471,12 @@ void HTTPUpdateConnect() {
 
 // send an NTP request to the time server at the given address
 unsigned long sendNTPpacket(IPAddress& address)
-{
-  Serial.println("sending NTP packet...");
+{ 
+# if debug
+  {
+    Serial.println("sending NTP packet...");
+  }
+  #endif 
   // set all bytes in the buffer to 0
   memset(packetBuffer, 0, NTP_PACKET_SIZE);
   // Initialize values needed to form NTP request
