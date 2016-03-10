@@ -223,7 +223,7 @@ void useNewData() {
     if (newData == true) {
 
                 StringFromSerial=receivedChars;
-             
+                
                 parseCommand(StringFromSerial);
                      StringFromSerial="";
                 ndx = 0;
@@ -309,8 +309,10 @@ void loop()
     // combine the four bytes (two words) into a long integer
     // this is NTP time (seconds since Jan 1 1900):
     unsigned long secsSince1900 = highWord << 16 | lowWord;
+    # if debug
     Serial.print("Unixtime: " );
     Serial.println(secsSince1900-2208988800UL);
+ #endif    
     now=secsSince1900-2208988800UL+3600;  //creating unixtime +1 Hour (timezone)
     sendCommand("nO", String(now.unixtime()) + "|");  //send the data to mega
     lastTimeNTPUpdate=millis();
@@ -323,7 +325,7 @@ void loop()
 
 if (webSockUpdate)
 {
-  if (millis()-webSockWait>200)
+  if (millis()-webSockWait>500)
   {webSockWait=millis();
    webSockUpdate=false;
    webSocketUpdate();
@@ -365,12 +367,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 
      if (text.substring(0, text.indexOf("|")).equalsIgnoreCase("viewAllData"))
       {
-/*      webSocket.broadcastTXT(testString);
-      webSocket.broadcastTXT(String(testInt));
-      webSocket.broadcastTXT(String(testFloat));
-      webSocket.broadcastTXT(String(testByte));
-      webSocket.broadcastTXT(String(testBoolean));
-      */
+
   # if debug
       webSocket.broadcastTXT(String(now.hour(), DEC) +  String(':')  +    String(now.minute(), DEC) + String(':') + String(now.second(), DEC) + String(' ')  + String(now.day(), DEC)+   String('.') +   String(now.month(), DEC) +    String('.') + String(now.year(), DEC)  );
       webSocket.broadcastTXT("PhWert: " + String(PhWert));

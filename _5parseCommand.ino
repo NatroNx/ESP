@@ -1,18 +1,18 @@
 
 void parseCommand(String com)
-{ 
+{  
   int sentChecksum=(com.substring(com.indexOf("*")+1, com.length())).toInt();
   int calculatedCheckSum=com.indexOf("*");
  
   if(sentChecksum==calculatedCheckSum)
-  {String part1;
+  { 
   // part1 = com.substring(0, com.indexOf("|"));
   if (com.substring(0, com.indexOf("|")).equalsIgnoreCase("toESP"))
   {
     for (int i = com.indexOf("|"); i < com.lastIndexOf("|"); i = com.indexOf("|", i + 1))
     { String part1 = com.substring(i + 1, com.indexOf("|", i + 1));
       int cmdID = findCommand(part1.substring(0, part1.indexOf(F("_"))).c_str());
- 
+
       switch (cmdID)
       { case tPhWert : {PhWert=(part1.substring(part1.indexOf(F("_"))+1,part1.length())).toFloat();  break;}
         case tTemp : {Temp=(part1.substring(part1.indexOf(F("_"))+1,part1.length())).toFloat();    break;}
@@ -37,17 +37,20 @@ void parseCommand(String com)
         case tnow : { now=1+(part1.substring(part1.indexOf(F("_")) + 1, part1.length())).toInt();  break;}
         case tcoolValue : {coolValue = (part1.substring(part1.indexOf(F("_")) + 1, part1.length())).toInt();      break;}
         
-      webSockWait=millis();
-      webSockUpdate=true;
+    
      
       }
 
     }
+    
+  //  webSockWait=millis();
+  //    webSockUpdate=true;  
     #if debug
       {
         printMyValues();
       }
 #endif
+webSocket.broadcastTXT("parse|" +com.substring(com.indexOf("|")-1,com.lastIndexOf("|"));
   }
   else  if (com.substring(0, com.indexOf("|")).equalsIgnoreCase("toMega"))
   {

@@ -46,6 +46,10 @@ void sendSerial(String sendCom)
 }
 
 
+void webSocketSingleSend(String item, String value)
+{webSocket.broadcastTXT("parse|"+item+"_"+value+"|");
+}
+
 void webSocketUpdate()
 {
       webSocket.broadcastTXT(
