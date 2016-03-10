@@ -50,7 +50,7 @@ void parseCommand(String com)
         printMyValues();
       }
 #endif
-webSocket.broadcastTXT("parse|" +com.substring(com.indexOf("|")-1,com.lastIndexOf("|"));
+webSocket.broadcastTXT("parse|" +com.substring(com.indexOf("|")-1,com.lastIndexOf("|")));
   }
   else  if (com.substring(0, com.indexOf("|")).equalsIgnoreCase("toMega"))
   {

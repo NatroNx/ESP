@@ -1,6 +1,6 @@
 //v.1.0.0 - 08.03.2016 -   init 
 //v.1.0.1 - 08.03.2016 - minor fixes
-
+//v.1.0.2 - 10.03.2016 - sendSerial with and without Feedback  - choose your weapons
 
 
 
@@ -110,8 +110,7 @@ unsigned long lastTimeHost;
 unsigned long lastTimeSent;
 unsigned long lastTimeNTPUpdate;
 String text="z10";
-int zInt;
-int zOld;
+
 
 
 
@@ -160,7 +159,7 @@ int callme=0;
 
 void setup()
 {
-  Serial.begin(115200);     
+  Serial.begin(57600);     
   Serial.println("Serial Monitor Connected");  
   pinMode(BLUEPIN, OUTPUT);
   analogWriteFreq(200);
