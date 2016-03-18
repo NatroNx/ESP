@@ -391,8 +391,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       webSocket.broadcastTXT("dPump3Value: " + String(dPump3Value));
       webSocket.broadcastTXT("coolValue: " + String(coolValue));
       #endif
-      webSockWait=millis();
-      webSockUpdate=true;
+      //webSockWait=millis();
+      //webSockUpdate=true;
     
 
 
@@ -401,8 +401,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       else if (text.substring(0, text.indexOf("|")).equalsIgnoreCase("GetData"))
       {
       getAllData();
-      webSockWait=millis();
-      webSockUpdate=true;
+      //webSockWait=millis();
+      //webSockUpdate=true;
 
       }
 

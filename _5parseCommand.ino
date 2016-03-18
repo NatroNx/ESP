@@ -44,13 +44,13 @@ void parseCommand(String com)
     }
     
   //  webSockWait=millis();
-  //    webSockUpdate=true;  
+  //   webSockUpdate=true;  
     #if debug
       {
         printMyValues();
       }
 #endif
-webSocket.broadcastTXT("parse|" +com.substring(com.indexOf("|")-1,com.lastIndexOf("|")));
+webSocket.broadcastTXT("parse|" +com.substring(com.indexOf("|")+1,com.lastIndexOf("|")));
   }
   else  if (com.substring(0, com.indexOf("|")).equalsIgnoreCase("toMega"))
   {
@@ -104,6 +104,7 @@ webSocket.broadcastTXT("parse|" +com.substring(com.indexOf("|")-1,com.lastIndexO
     #if debug
       { Serial.println(F("Checksum Wrong Recieved: "));
         Serial.println(com);
+        webSocket.broadcastTXT("hecksumerror:" +com);
       }
       #endif
      }
