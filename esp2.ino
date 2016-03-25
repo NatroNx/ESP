@@ -1,7 +1,7 @@
 //v.1.0.0 - 08.03.2016 -   init 
 //v.1.0.1 - 08.03.2016 - minor fixes
 //v.1.0.2 - 10.03.2016 - sendSerial with and without Feedback  - choose your weapons
-
+//v 1.0.3 - 25.03.2016 - fixed the bug that Information received over serial wasn't complete
 
 
 #include <ESP8266WiFi.h>
@@ -159,7 +159,7 @@ int callme=0;
 
 void setup()
 {
-  Serial.begin(57600);     
+  Serial.begin(9600);     
   Serial.println("Serial Monitor Connected");  
   pinMode(BLUEPIN, OUTPUT);
   analogWriteFreq(200);
@@ -181,7 +181,8 @@ void setup()
    
  
  // if (Serial.available() > 0) {
-    while (Serial.available()) {
+    while (Serial.available() > 0 && newData == false) 
+    {
         rc = Serial.read();
 
         if (recvInProgress == true) {
@@ -224,7 +225,8 @@ void useNewData() {
                 StringFromSerial=receivedChars;
                 
                 parseCommand(StringFromSerial);
-                     StringFromSerial="";
+              // sendSerial("dbgES: " + StringFromSerial);
+                StringFromSerial="";
                 ndx = 0;
                 newData = false;
               }
@@ -254,18 +256,6 @@ void loop()
 
    recvWithStartEndMarkers();
     useNewData();
-
-
-
-  
-  if(millis()-sent>100)
-    {sent=millis();
-     String tool = "Test" + String(i, DEC);
-     //analogWrite(BLUEPIN, 255);
-     //Serial.println(i);
-     //sendCommand(tool);
-     i++;
-    }
     
     
 
