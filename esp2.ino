@@ -2,7 +2,7 @@
 //v.1.0.1 - 08.03.2016 - minor fixes
 //v.1.0.2 - 10.03.2016 - sendSerial with and without Feedback  - choose your weapons
 //v 1.0.3 - 25.03.2016 - fixed the bug that Information received over serial wasn't complete
-
+//v 1.0.4 - 28.03.2016 - changed ntp to europe (for DST), added automatic DST switching
 
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
@@ -27,7 +27,7 @@
 
 unsigned int localPort = 2390;      // local port to listen for UDP packets
 IPAddress timeServerIP; // time.nist.gov NTP server address
-const char* ntpServerName = "time.nist.gov";
+const char* ntpServerName = "europe.pool.ntp.org";
 const int NTP_PACKET_SIZE = 48; // NTP time stamp is in the first 48 bytes of the message
 byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets
 // A UDP instance to let us send and receive packets over UDP
@@ -260,7 +260,7 @@ void loop()
     
 
 
- if (millis()-lastTimeNTPUpdate>60000 * 60 ||  lastTimeNTPUpdate==0 )   // alle 60 Minuten NTP Update
+ if (millis()-lastTimeNTPUpdate>60000 * 360||  lastTimeNTPUpdate==0 )   // on bootup and every 6 hours NTP Update
 {
   //get a random server from the pool
   WiFi.hostByName(ntpServerName, timeServerIP); 
@@ -302,7 +302,10 @@ void loop()
     Serial.print("Unixtime: " );
     Serial.println(secsSince1900-2208988800UL);
  #endif    
-    now=secsSince1900-2208988800UL+3600;  //creating unixtime +1 Hour (timezone)
+    now=secsSince1900-2208988800UL+3600;  //creating unixtime +1 Hour (for CET)
+    if (IsDst(now.day(), now.month(), now.dayOfTheWeek()))  //if Summertime +1 hour
+    {now=now+3600;
+    }
     sendCommand("nO", String(now.unixtime()) + "|");  //send the data to mega
     lastTimeNTPUpdate=millis();
  }
@@ -486,6 +489,20 @@ unsigned long sendNTPpacket(IPAddress& address)
 }
 
 
+
+
+ boolean IsDst(int day, int month, int dow)
+    {
+        if (month < 3 || month > 10)  return false; 
+        if (month > 3 && month < 10)  return true; 
+
+        int previousSunday = day - dow;
+
+        if (month == 3) return previousSunday >= 25;
+        if (month == 10) return previousSunday < 25;
+
+        return false; // this line never gonna happend
+    }
 
 
 
