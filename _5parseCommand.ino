@@ -1,7 +1,6 @@
 
 void parseCommand(String com)
-{  
-  int sentChecksum=(com.substring(com.indexOf("*")+1, com.length())).toInt();
+{ int sentChecksum=(com.substring(com.indexOf("*")+1, com.length())).toInt();
   int calculatedCheckSum=com.indexOf("*");
  
   if(sentChecksum==calculatedCheckSum)
@@ -47,7 +46,7 @@ void parseCommand(String com)
   //   webSockUpdate=true;  
     #if debug
       {
-        printMyValues();
+    //printMyValues();
       }
 #endif
 webSocket.broadcastTXT("parse|" +com.substring(com.indexOf("|")+1,com.lastIndexOf("|")));
@@ -91,7 +90,7 @@ webSocket.broadcastTXT("parse|" +com.substring(com.indexOf("|")+1,com.lastIndexO
           webSocketUpdate();    
     }
     else
-    {
+    {webSocket.broadcastTXT("Test");
       #if debug
       { Serial.println(F("Recieved: "));
         Serial.println(com);
@@ -104,7 +103,8 @@ webSocket.broadcastTXT("parse|" +com.substring(com.indexOf("|")+1,com.lastIndexO
     #if debug
       { Serial.println(F("Checksum Wrong Recieved: "));
         Serial.println(com);
-        webSocket.broadcastTXT("hecksumerror:" +com);
+        webSocket.broadcastTXT("Checksumerror:");
+        webSocket.broadcastTXT(com);
       }
       #endif
      }

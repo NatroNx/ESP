@@ -10,8 +10,8 @@ void sendCommand(String variable, String sendCom)
  else if (CheckSum<100) {sendThis+=0;}                
  sendThis+=CheckSum;    
  sendThis+=">";            
- char charBuf[250];
-  sendThis.toCharArray(charBuf, 250);
+ char charBuf[650];
+  sendThis.toCharArray(charBuf, 650);
   Serial.write(charBuf);
 # if debug
   { Serial.print(F("DebugLine: "));
@@ -31,8 +31,8 @@ void sendSerial(String sendCom)
  else if (CheckSum<100) {sendThis+="0";}                
  sendThis+=CheckSum;    
  sendThis+=">";            
- char charBuf[250];
-  sendThis.toCharArray(charBuf, 250);
+ char charBuf[650];
+  sendThis.toCharArray(charBuf, 650);
   Serial.write(charBuf);
   
 
@@ -74,6 +74,9 @@ void webSocketUpdate()
         "|nO_"+String(now.unixtime())        +
         "|");
 }
+
+
+
 
 
 

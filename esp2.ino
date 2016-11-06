@@ -3,6 +3,8 @@
 //v.1.0.2 - 10.03.2016 - sendSerial with and without Feedback  - choose your weapons
 //v 1.0.3 - 25.03.2016 - fixed the bug that Information received over serial wasn't complete
 //v 1.0.4 - 28.03.2016 - changed ntp to europe (for DST), added automatic DST switching
+//v 1.0.5 - 28.10.2016 - implementing first TempCurve Tests
+
 
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
@@ -33,12 +35,12 @@ byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing pack
 // A UDP instance to let us send and receive packets over UDP
 WiFiUDP udp;
 
-#define debug 0
+#define debug 1
 
 
 
 
-const byte numChars = 230;
+const byte numChars = 255;
 char receivedChars[numChars];
 static byte ndx = 0;
 boolean newData = false;
@@ -111,8 +113,9 @@ unsigned long lastTimeSent;
 unsigned long lastTimeNTPUpdate;
 String text="z10";
 
-
-
+float TempValues[96];
+int Co2Values[96];
+float PHValues[96];
 
 
 
@@ -168,6 +171,21 @@ void setup()
   HTTPUpdateConnect();
   udp.begin(localPort);     //ntp 
   lastTimeNTPUpdate=0;
+
+  for (int i = 0; i < 96; i++)
+  {
+    float rndT=random(250, 270);
+    TempValues[i] = rndT/10;
+    rndT=random(690, 710);
+    PHValues[i] = rndT/100;
+    rndT=random(0, 19);
+    Co2Values[i] = rndT/10;
+    
+  }
+  
+
+  
+  
 }
 
 
@@ -399,11 +417,26 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 
       }
 
+      else if (text.equalsIgnoreCase("getTempArray"))
+      { String TempString=String(TempValues[0]);
+        String Co2String=String(Co2Values[0]);
+        String PHString=String(PHValues[0]);
+        
+        for (int i=1; i<96; i++)
+        {
+        PHString=PHString+";"+String(PHValues[i]);
+        TempString=TempString+";"+String(TempValues[i]);
+        Co2String=Co2String+";"+String(Co2Values[i]);       
+        }
+        webSocket.broadcastTXT("parse|tS_"+TempString+"|");
+        webSocket.broadcastTXT("parse|phS_"+PHString+"|");
+        webSocket.broadcastTXT("parse|cS_"+Co2String+"|");
+        
+      }
       else
       {
         sendSerial(text);
       }
-
         
 
        }
