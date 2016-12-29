@@ -22,7 +22,7 @@
 #define BLUEPIN 13
 
 #define SSID_ME "Wlan07"
-#define PW_ME "wlan_01!_2005!grojer_.."
+#define PW_ME "1."
 #define HOST_ME "ESP8266"
 
 
